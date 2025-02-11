@@ -24,11 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
-
-
-    private val NOTIFICATION_PERMISSION_CODE = 1001 // Mã yêu cầu quyền thông báo
     private val REQUEST_CODE_PERMISSIONS = 123 // Mã yêu cầu quyền
-    private val REQUIRED_PERMISSION = Manifest.permission.READ_MEDIA_AUDIO // Quyền cần xin
     private lateinit var binding: ActivityMainBinding
     private lateinit var recyclerView: RecyclerView
     private lateinit var fileAdapter: FileAdapter
@@ -60,32 +56,32 @@ class MainActivity : AppCompatActivity() {
     private fun checkAndRequestPermissions() {
         val permissionsToRequest = mutableListOf<String>()
 
-        // Kiểm tra quyền truy cập bộ nhớ
-        if (ContextCompat.checkSelfPermission(this, REQUIRED_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
-            permissionsToRequest.add(REQUIRED_PERMISSION)
+        // Android 13+ (API 33): Xin quyền READ_MEDIA_AUDIO thay vì READ_EXTERNAL_STORAGE
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.READ_MEDIA_AUDIO)
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // Android 6+ yêu cầu quyền runtime
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
         }
 
-        // Kiểm tra quyền thông báo (chỉ trên Android 13+)
+        // Android 13+ (API 33): Xin quyền POST_NOTIFICATIONS
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
 
-        // Nếu có quyền cần xin, thì yêu cầu tất cả cùng lúc
+        // Nếu có quyền cần xin, yêu cầu người dùng cấp quyền
         if (permissionsToRequest.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), REQUEST_CODE_PERMISSIONS)
         } else {
-            scanFiles() // Nếu đã có quyền thì quét file ngay
+            scanFiles() // Nếu đã có quyền, thực hiện hành động ngay
         }
     }
 
-
-    private fun requestPermission() {
-        // Yêu cầu quyền
-        ActivityCompat.requestPermissions(this, arrayOf(REQUIRED_PERMISSION), REQUEST_CODE_PERMISSIONS)
-    }
 
     // Hàm quét file âm thanh
     private fun scanFiles() {
@@ -132,14 +128,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Xử lý kết quả yêu cầu quyền
+    // Xử lý kết quả cấp quyền
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Quyền đã được cấp, bạn có thể quét file âm thanh
+            val allPermissionsGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+
+            if (allPermissionsGranted) {
                 scanFiles()
+            } else {
+                Toast.makeText(this, "Ứng dụng cần quyền để truy cập file âm thanh!", Toast.LENGTH_SHORT).show()
             }
         }
     }
+
 }

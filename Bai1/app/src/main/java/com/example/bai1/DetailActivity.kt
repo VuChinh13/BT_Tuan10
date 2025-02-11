@@ -95,7 +95,7 @@ class DetailActivity : AppCompatActivity() {
                     // hiển thị cái tên bài hát
                     binding.tvTen.text = fileList.get(currentIndex).name
                     playMusic(currentIndex)  // Phát bài mới
-                } else {
+                } else if (status == "PLAY"){
                     binding.ivPlay.visibility = View.GONE
                     binding.ivPause.visibility = View.VISIBLE
                     playMusic(currentIndex)  // Tiếp tục phát nhạc
@@ -220,10 +220,12 @@ class DetailActivity : AppCompatActivity() {
         return String.format("%02d:%02d", minutes, seconds)
     }
 
+    @OptIn(UnstableApi::class)
     override fun onDestroy() {
         super.onDestroy()
         // Dừng nhạc và dừng service khi Activity bị hủy
-        stopMusic()
+        val serviceIntent = Intent(this, MusicService::class.java)
+        stopService(serviceIntent)
         unregisterReceiver(timeUpdateReceiver)  // Hủy đăng ký receiver
         unregisterReceiver(musicUpdateReceiver)
     }

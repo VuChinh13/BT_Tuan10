@@ -1,5 +1,4 @@
 package com.example.bai1
-
 import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View

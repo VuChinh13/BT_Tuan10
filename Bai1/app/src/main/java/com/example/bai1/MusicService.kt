@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.service.notification.NotificationListenerService
 import android.util.Log
 import android.widget.RemoteViews
@@ -52,31 +53,6 @@ class MusicService : Service() {
     }
 
 
-    private val pausePendingIntent: PendingIntent by lazy {
-        if (isPlaying) { // nếu mà nhạc đang chạy
-            isPlaying = false
-            val intent = Intent("com.example.bai1.MUSIC_UPDATE").apply {
-                putExtra("STATUS", "PAUSE") // Gửi trạng thái
-            }
-            PendingIntent.getBroadcast(
-                this,
-                1,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        }else{ // nếu mà đang bị tạm dừng thì chuyển icon
-            val intent = Intent("com.example.bai1.MUSIC_UPDATE").apply {
-                putExtra("STATUS", "PLAY") // Gửi trạng thái
-            }
-            PendingIntent.getBroadcast(
-                this,
-                1,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        }
-    }
-
     private val nextPendingIntent: PendingIntent by lazy {
         val intent = Intent("com.example.bai1.MUSIC_UPDATE").apply {
             putExtra("STATUS", "NEXT") // Gửi trạng thái PAUSE
@@ -88,7 +64,6 @@ class MusicService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
-
 
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -152,7 +127,7 @@ class MusicService : Service() {
         } else {
             isPlaying = true// Đang phát nhạc
             mediaPlayer?.start()
-           createNotification(R.drawable.ic_pause_2) // Hiển thị thông báo khi mà chơi nhạc
+            createNotification(R.drawable.ic_pause_2) // Hiển thị thông báo khi mà chơi nhạc
         }
     }
 
@@ -172,9 +147,14 @@ class MusicService : Service() {
 
     private val timeUpdateRunnable = object : Runnable {
         override fun run() {
-            val intent = Intent("com.example.bai1.TIME_UPDATE")
-            intent.putExtra("currentPosition", mediaPlayer?.currentPosition ?: 0)
-            intent.putExtra("duration", mediaPlayer?.duration ?: 0)
+            val currentPosition = mediaPlayer?.currentPosition ?: 0
+            val duration = mediaPlayer?.duration ?: 100
+
+            //  Gửi thời gian về DetailActivity
+            val intent = Intent("com.example.bai1.TIME_UPDATE").apply {
+                putExtra("currentPosition", currentPosition)
+                putExtra("duration", duration)
+            }
             sendBroadcast(intent)
             handler.postDelayed(this, timeUpdateInterval) // Tiếp tục cập nhật mỗi giây
         }
@@ -182,14 +162,28 @@ class MusicService : Service() {
 
 
 
+
     @OptIn(UnstableApi::class)
     private fun createNotification(playPauseIcon:Int) {
+        // Tạo PendingIntent động theo trạng thái mới
+        // Không viết lazy như ở trên vì lazy chỉ khởi tạo 1 lần mà thôi
+        Log.d("checkMusic", "check thành công")
+        val pauseIntent = Intent("com.example.bai1.MUSIC_UPDATE").apply {
+            putExtra("STATUS", if (isPlaying) "PAUSE" else "PLAY") // Trạng thái chính xác
+        }
+        val pausePendingIntent = PendingIntent.getBroadcast(
+            this,
+            1,
+            pauseIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setSmallIcon(R.drawable.image_music)
-            .addAction(R.drawable.skip_back_2, "Previous", prevPendingIntent) // Nút "Previous"
-            .addAction(playPauseIcon, "Pause", pausePendingIntent) // Nút "Pause" hoặc là Play
-            .addAction(R.drawable.skip_forward_2, "Next", nextPendingIntent) // Nút "Next"
+            .addAction(R.drawable.skip_back_2, null, prevPendingIntent) // Nút "Previous"
+            .addAction(playPauseIcon, null, pausePendingIntent) // Nút "Pause" hoặc là Play
+            .addAction(R.drawable.skip_forward_2, null, nextPendingIntent) // Nút "Next"
             .setStyle(
                 androidx.media.app.NotificationCompat.MediaStyle()
                     .setMediaSession(mediaSession.sessionToken) // Gắn media session
@@ -205,18 +199,20 @@ class MusicService : Service() {
 
 
 
-
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O      ) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Music Service Channel",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_LOW // 💡 IMPORTANCE_LOW để tránh hiển thị thông báo lớn
             )
+            channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC // 💡 Hiển thị trên màn hình khóa
+
             val manager = getSystemService(NotificationManager::class.java)
             manager?.createNotificationChannel(channel)
         }
     }
+
 }
 
 
