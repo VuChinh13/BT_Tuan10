@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:padding="5dp"
+    android:orientation="vertical"
+    android:background="@drawable/bg_notification"
+    android:layout_height="80dp">
+
+    <TextView
+        android:id="@+id/tv_ten"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="15sp"
+        android:textColor="@color/white"
+        android:text="Tên bài hát " />
+
+   <LinearLayout
+       android:orientation="horizontal"
+       android:padding="10dp"
+       android:layout_width="match_parent"
+       android:layout_height="wrap_content">
+
+       <ImageView
+           android:id="@+id/iv_skip_back"
+           android:layout_width="20dp"
+           android:layout_height="20dp"
+           app:srcCompat="@drawable/skip_back" />
+
+       <ImageView
+           android:id="@+id/iv_pause"
+           android:layout_width="20dp"
+           android:layout_height="20dp"
+           android:layout_marginLeft="30dp"
+           app:srcCompat="@drawable/ic_pause" />
+
+       <ImageView
+           android:id="@+id/iv_skip_forward"
+           android:layout_width="20dp"
+           android:layout_height="20dp"
+           android:layout_marginLeft="30dp"
+           app:srcCompat="@drawable/skip_forward"/>
+   </LinearLayout>
+
+</LinearLayout>

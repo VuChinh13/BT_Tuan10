@@ -54,7 +54,6 @@
     <SeekBar
         android:id="@+id/sb_music"
         android:layout_width="0dp"
-        android:max="100"
         android:layout_height="wrap_content"
         android:layout_marginTop="150dp"
         app:layout_constraintEnd_toEndOf="parent"

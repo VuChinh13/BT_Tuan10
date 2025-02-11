@@ -3,6 +3,7 @@ package com.example.bai1
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.widget.Toast
@@ -24,6 +25,8 @@ import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
+
+    private val NOTIFICATION_PERMISSION_CODE = 1001 // Mã yêu cầu quyền thông báo
     private val REQUEST_CODE_PERMISSIONS = 123 // Mã yêu cầu quyền
     private val REQUIRED_PERMISSION = Manifest.permission.READ_MEDIA_AUDIO // Quyền cần xin
     private lateinit var binding: ActivityMainBinding
@@ -51,14 +54,33 @@ class MainActivity : AppCompatActivity() {
         val dividerItemDecoration = DividerItemDecoration(recyclerView.context, DividerItemDecoration.VERTICAL)
         recyclerView.addItemDecoration(dividerItemDecoration)
 
-        // Kiểm tra quyền khi ứng dụng được mở
+        checkAndRequestPermissions()
+    }
+
+    private fun checkAndRequestPermissions() {
+        val permissionsToRequest = mutableListOf<String>()
+
+        // Kiểm tra quyền truy cập bộ nhớ
         if (ContextCompat.checkSelfPermission(this, REQUIRED_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
-            // Nếu quyền chưa được cấp, yêu cầu quyền
-            requestPermission()
+            permissionsToRequest.add(REQUIRED_PERMISSION)
+        }
+
+        // Kiểm tra quyền thông báo (chỉ trên Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        // Nếu có quyền cần xin, thì yêu cầu tất cả cùng lúc
+        if (permissionsToRequest.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), REQUEST_CODE_PERMISSIONS)
         } else {
-            scanFiles()
+            scanFiles() // Nếu đã có quyền thì quét file ngay
         }
     }
+
 
     private fun requestPermission() {
         // Yêu cầu quyền
